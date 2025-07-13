@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HopeChain Donation DApp</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <!-- Google Fonts for modern look -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Roboto&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            min-height: 100vh;
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 540px;
+            margin: 40px auto;
+            background: rgba(255,255,255,0.95);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25);
+            padding: 32px 28px 40px 28px;
+            position: relative;
+            overflow: hidden;
+        }
+        h1 {
+            font-family: 'Montserrat', Arial, sans-serif;
+            font-size: 2.5rem;
+            color: #2d5cfe;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 8px #b3c6ff;
+        }
+        h2 {
+            color: #2d5cfe;
+            margin-top: 32px;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+        button {
+            background: linear-gradient(90deg, #2d5cfe 0%, #00c6fb 100%);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 28px;
+            font-size: 1rem;
+            font-family: 'Montserrat', Arial, sans-serif;
+            font-weight: 700;
+            margin: 8px 0;
+            cursor: pointer;
+            box-shadow: 0 4px 16px 0 rgba(45,92,254,0.15);
+            transition: transform 0.15s, box-shadow 0.15s;
+            outline: none;
+        }
+        button:hover {
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 8px 32px 0 rgba(45,92,254,0.25);
+        }
+        input[type="number"] {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid #b3c6ff;
+            font-size: 1rem;
+            margin-right: 8px;
+            width: 180px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        input[type="number"]:focus {
+            border: 1.5px solid #2d5cfe;
+        }
+        .status {
+            min-height: 24px;
+            margin: 8px 0 0 0;
+            font-weight: 500;
+        }
+        .success {
+            color: #27ae60;
+        }
+        .error {
+            color: #e74c3c;
+        }
+        .summary {
+            background: rgba(45,92,254,0.07);
+            border-radius: 10px;
+            padding: 12px 0;
+            margin: 18px 0 10px 0;
+            font-size: 1.1rem;
+        }
+        ul#donationList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        ul#donationList li {
+            background: linear-gradient(90deg, #f8fafc 60%, #e0eafc 100%);
+            margin: 8px 0;
+            padding: 14px 18px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px 0 rgba(45,92,254,0.07);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeInUp 0.7s cubic-bezier(.23,1.01,.32,1) both;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+        /* 3D animated coin */
+        .coin-3d {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 18px auto;
+            perspective: 400px;
+        }
+        .coin {
+            width: 70px;
+            height: 70px;
+            background: radial-gradient(circle at 30% 30%, #3c3c3d 70%, #8c8c8c 100%);
+            border-radius: 50%;
+            box-shadow: 0 6px 24px 0 rgba(60,60,61,0.18);
+            position: relative;
+            animation: spinCoin 2.5s linear infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .coin::after {
+            content: "";
+            width: 30px;
+            height: 30px;
+            background: url('https://upload.wikimedia.org/wikipedia/commons/6/6f/Ethereum-icon-purple.svg') no-repeat center;
+            background-size: contain;
+        }
+        @keyframes spinCoin {
+            0% { transform: rotateY(0deg);}
+            100% { transform: rotateY(360deg);}
+        }
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container { padding: 16px 4px 24px 4px; }
+            h1 { font-size: 1.5rem; }
+            input[type="number"] { width: 120px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="coin-3d"><div class="coin"></div></div>
+        <h1>HopeChain Donation Platform</h1>
+        <button onclick="connectWallet()">Connect Wallet</button>
+        <p id="walletAddress">Wallet: Not connected</p>
+        <div class="summary">
+            <strong>Total Donations:</strong> <span id="donationCount">Loading...</span><br>
+            <strong>Contract Balance:</strong> <span id="contractBalance">Loading...</span> ETH
+        </div>
+        <h2>Make a Donation</h2>
+        <input type="number" id="donationAmount" placeholder="Amount in ETH" min="0.001" step="0.001" />
+        <button onclick="donate()">Donate</button>
+        <div id="donationStatus" class="status"></div>
+        <h2>Recent Donations</h2>
+        <ul id="donationList"></ul>
+        <h2>Admin</h2>
+        <button onclick="withdraw()">Withdraw Funds</button>
+        <div id="withdrawStatus" class="status"></div>
+    </div>
+    <script>
+        const contractAddress = '0x55bc955e4a6effd01e34472efa062080df6d24bd';
+        const contractABI = [
+            {
+                "inputs": [],
+                "name": "donate",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    { "indexed": true, "internalType": "address", "name": "donor", "type": "address" },
+                    { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" },
+                    { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+                ],
+                "name": "DonationReceived",
+                "type": "event"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    { "indexed": true, "internalType": "address", "name": "admin", "type": "address" },
+                    { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
+                ],
+                "name": "FundsWithdrawn",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "withdrawFunds",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "admin",
+                "outputs": [
+                    { "internalType": "address", "name": "", "type": "address" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "cooldownTime",
+                "outputs": [
+                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                ],
+                "name": "donations",
+                "outputs": [
+                    { "internalType": "address", "name": "donor", "type": "address" },
+                    { "internalType": "uint256", "name": "amount", "type": "uint256" },
+                    { "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getContractBalance",
+                "outputs": [
+                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    { "internalType": "uint256", "name": "index", "type": "uint256" }
+                ],
+                "name": "getDonationByIndex",
+                "outputs": [
+                    { "internalType": "address", "name": "", "type": "address" },
+                    { "internalType": "uint256", "name": "", "type": "uint256" },
+                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getDonationCount",
+                "outputs": [
+                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    { "internalType": "address", "name": "", "type": "address" }
+                ],
+                "name": "lastDonationTime",
+                "outputs": [
+                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "totalDonations",
+                "outputs": [
+                    { "internalType": "uint256", "name": "", "type": "uint256" }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
+        let web3;
+        let contract;
+        let userAccount;
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const accounts = await web3.eth.getAccounts();
+                userAccount = accounts[0];
+                document.getElementById("walletAddress").innerText = "Wallet: " + userAccount;
+                contract = new web3.eth.Contract(contractABI, contractAddress);
+                loadData();
+            } else {
+                alert("Please install MetaMask!");
+            }
+        }
+
+        async function donate() {
+            const ethAmount = document.getElementById("donationAmount").value;
+            if (!ethAmount || parseFloat(ethAmount) <= 0) {
+                document.getElementById("donationStatus").innerText = "Enter a valid amount.";
+                document.getElementById("donationStatus").className = "status error";
+                return;
+            }
+            const weiAmount = web3.utils.toWei(ethAmount, "ether");
+
+            try {
+                await contract.methods.donate().send({
+                    from: userAccount,
+                    value: weiAmount
+                });
+                document.getElementById("donationStatus").innerText = "Donation successful!";
+                document.getElementById("donationStatus").className = "status success";
+                loadData();
+            } catch (err) {
+                document.getElementById("donationStatus").innerText = "Error: " + err.message;
+                document.getElementById("donationStatus").className = "status error";
+            }
+        }
+
+        async function loadData() {
+            try {
+                const count = await contract.methods.getDonationCount().call();
+                document.getElementById("donationCount").innerText = count;
+
+                const balanceWei = await contract.methods.getContractBalance().call();
+                const balanceEth = web3.utils.fromWei(balanceWei, "ether");
+                document.getElementById("contractBalance").innerText = balanceEth;
+
+                const list = document.getElementById("donationList");
+                list.innerHTML = "";
+
+                // Show up to 5 most recent donations
+                for (let i = count - 1; i >= 0 && i >= count - 5; i--) {
+                    const donation = await contract.methods.getDonationByIndex(i).call();
+                    const donor = donation[0];
+                    const amount = donation[1];
+                    const timestamp = donation[2];
+
+                    const date = new Date(timestamp * 1000);
+                    const li = document.createElement("li");
+                    li.innerHTML = `<span style="color:#2d5cfe;font-weight:bold;">${donor.slice(0,6)}...${donor.slice(-4)}</span> 
+                        <span style="color:#27ae60;">${web3.utils.fromWei(amount, "ether")} ETH</span> 
+                        <span style="color:#888;">${date.toLocaleString()}</span>`;
+                    list.appendChild(li);
+                }
+            } catch (err) {
+                document.getElementById("donationList").innerHTML = "<li style='color:#e74c3c;'>Failed to load donations.</li>";
+            }
+        }
+
+        async function withdraw() {
+            try {
+                await contract.methods.withdrawFunds().send({ from: userAccount });
+                document.getElementById("withdrawStatus").innerText = "Funds withdrawn!";
+                document.getElementById("withdrawStatus").className = "status success";
+                loadData();
+            } catch (err) {
+                document.getElementById("withdrawStatus").innerText = "Error: " + err.message;
+                document.getElementById("withdrawStatus").className = "status error";
+            }
+        }
+    </script>
+</body>
+</html>
